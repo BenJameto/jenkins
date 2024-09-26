@@ -39,30 +39,17 @@ spec:
       containers:
       - name: jenkins
         image: jenkins/jenkins:lts
-        securityContext:
-          runAsUser: 0  # Ejecutar el contenedor como root
         ports:
         - containerPort: 8080
         - containerPort: 50000
         volumeMounts:
         - name: jenkins-data
           mountPath: /var/jenkins_home
-        - name: docker-socket
-          mountPath: /var/run/docker.sock
-        command: ["/bin/sh", "-c"]  # Ejecutar comandos al iniciar el contenedor
-        args:
-        - |
-          apt-get update && \
-          apt-get install -y docker.io && \
-          jenkins
+        # Elimina el montaje del socket de Docker si no es necesario
       volumes:
       - name: jenkins-data
         persistentVolumeClaim:
           claimName: jenkins-pv-claim
-      - name: docker-socket
-        hostPath:
-          path: /var/run/docker.sock
-          type: Socket
 
 ---
 apiVersion: v1
@@ -73,14 +60,14 @@ metadata:
   labels:
     app: jenkins
 spec:
+  type: NodePort
   ports:
   - name: http
     port: 8080
     targetPort: 8080
+    nodePort: 30096
   - name: agent
     port: 50000
     targetPort: 50000
   selector:
     app: jenkins
-  type: NodePort
-  nodePort: 30096  # Exponer en este puerto para que puedas acceder a través de http://<minikube-ip>:30096
