@@ -45,11 +45,15 @@ spec:
         volumeMounts:
         - name: jenkins-data
           mountPath: /var/jenkins_home
-        # Elimina el montaje del socket de Docker si no es necesario
+        - name: docker-socket               # Monta el socket de Docker
+          mountPath: /var/run/docker.sock   # Path dentro del contenedor
       volumes:
       - name: jenkins-data
         persistentVolumeClaim:
           claimName: jenkins-pv-claim
+      - name: docker-socket
+        hostPath:
+          path: /var/run/docker.sock        # Path del socket de Docker en el host Minikube
 
 ---
 apiVersion: v1
