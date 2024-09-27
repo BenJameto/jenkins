@@ -4,6 +4,7 @@ metadata:
   name: jenkins
 
 ---
+
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -14,16 +15,15 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 10Gi
+      storage: 8Gi
 
 ---
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jenkins
   namespace: jenkins
-  labels:
-    app: jenkins
 spec:
   replicas: 1
   selector:
@@ -34,44 +34,40 @@ spec:
       labels:
         app: jenkins
     spec:
-      securityContext:
-        fsGroup: 1000
       containers:
       - name: jenkins
-        image: jenkins/jenkins:lts
+        image: jenkins/jenkins:lts  # Puedes reemplazar esta línea con tu imagen personalizada con Docker preinstalado
         ports:
         - containerPort: 8080
         - containerPort: 50000
         volumeMounts:
-        - name: jenkins-data
+        - name: jenkins-home
           mountPath: /var/jenkins_home
-        - name: docker-socket               # Monta el socket de Docker
-          mountPath: /var/run/docker.sock   # Path dentro del contenedor
+        - name: docker-socket
+          mountPath: /var/run/docker.sock
       volumes:
-      - name: jenkins-data
+      - name: jenkins-home
         persistentVolumeClaim:
           claimName: jenkins-pv-claim
       - name: docker-socket
         hostPath:
-          path: /var/run/docker.sock        # Path del socket de Docker en el host Minikube
+          path: /var/run/docker.sock
+          type: File
 
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
   name: jenkins
   namespace: jenkins
-  labels:
-    app: jenkins
 spec:
   type: NodePort
   ports:
-  - name: http
-    port: 8080
-    targetPort: 8080
-    nodePort: 30096
-  - name: agent
-    port: 50000
-    targetPort: 50000
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30000
+    - port: 50000
+      targetPort: 50000
   selector:
     app: jenkins
