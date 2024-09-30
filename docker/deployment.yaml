@@ -1,19 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jenkins-agent-deployment
+  name: jenkins
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: jenkins-agent
+      app: jenkins
   template:
     metadata:
       labels:
-        app: jenkins-agent
+        app: jenkins
     spec:
       containers:
-      - name: jenkins-agent-container
-        image: benjameto/myjenkins-agent-docker:latest
+      - name: jenkins
+        image: jenkins/jenkins:lts
+        volumeMounts:
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
         ports:
         - containerPort: 8080
+        - containerPort: 50000
+      volumes:
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
