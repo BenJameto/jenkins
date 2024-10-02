@@ -1,69 +1,49 @@
 #!/bin/bash
 
-# Nombre del namespace para Jenkins
-NAMESPACE="jenkins"
+# Nombre del archivo de configuración de Jenkins
+CONFIG_FILE="jenkins-dind-deployment.yaml"
 
-# Verifica si Helm está instalado
-if ! command -v helm &> /dev/null
-then
-    echo "Helm no está instalado. Por favor instala Helm e intenta nuevamente."
-    exit 1
+# Función para verificar si un comando fue exitoso
+check_command() {
+    if [ $? -ne 0 ]; then
+        echo "Error: $1"
+        exit 1
+    fi
+}
+
+# Iniciar Minikube si no está corriendo
+if ! minikube status | grep -q "Running"; then
+    echo "Iniciando Minikube..."
+    minikube start
+    check_command "No se pudo iniciar Minikube"
 fi
 
-# Crear namespace para Jenkins si no existe
-echo "Creando el namespace $NAMESPACE si no existe..."
-kubectl create namespace $NAMESPACE
+# Crear el namespace jenkins
+echo "Creando namespace jenkins..."
+kubectl create namespace jenkins
+check_command "No se pudo crear el namespace jenkins"
 
-# Agregar el repositorio de charts de Jenkins
-echo "Agregando el repositorio de charts de Jenkins a Helm..."
-helm repo add jenkins https://charts.jenkins.io
-helm repo update
+# Aplicar la configuración de Jenkins
+echo "Aplicando configuración de Jenkins..."
+kubectl apply -f $CONFIG_FILE
+check_command "No se pudo aplicar la configuración de Jenkins"
 
-# Instalar Jenkins usando Helm
-echo "Instalando Jenkins en el namespace $NAMESPACE..."
-helm install jenkins jenkins/jenkins --namespace $NAMESPACE \
-  --set controller.serviceType=NodePort \
-  --set controller.nodePort=32000 \
-  --set controller.admin.username=admin \
-  --set controller.admin.password=admin
+# Esperar a que el pod de Jenkins esté listo
+echo "Esperando a que el pod de Jenkins esté listo..."
+kubectl wait --for=condition=ready pod -l app=jenkins -n jenkins --timeout=300s
+check_command "El pod de Jenkins no está listo después de 5 minutos"
 
-echo "http://$MINIKUBE_IP:32000"navegador usando la siguiente URL:"
-Creando el namespace jenkins si no existe...
-namespace/jenkins created
-Agregando el repositorio de charts de Jenkins a Helm...
-"jenkins" already exists with the same configuration, skipping
-Hang tight while we grab the latest from your chart repositories...
-...Successfully got an update from the "jenkins" chart repository
-...Successfully got an update from the "gitlab" chart repository
-Update Complete. ⎈Happy Helming!⎈
-Instalando Jenkins en el namespace jenkins...
-NAME: jenkins
-LAST DEPLOYED: Mon Sep 30 15:41:01 2024
-NAMESPACE: jenkins
-STATUS: deployed
-REVISION: 1
-NOTES:
-1. Get your 'admin' user password by running:
-  kubectl exec --namespace jenkins -it svc/jenkins -c jenkins -- /bin/cat /run/secrets/additional/chart-admin-password && echo
-2. Get the Jenkins URL to visit by running these commands in the same shell:
-  export NODE_PORT=$(kubectl get --namespace jenkins -o jsonpath="{.spec.ports[0].nodePort}" services jenkins)
-  export NODE_IP=$(kubectl get nodes --namespace jenkins -o jsonpath="{.items[0].status.addresses[0].address}")
-  echo http://$NODE_IP:$NODE_PORT
+# Obtener la URL de Jenkins
+echo "Obteniendo URL de Jenkins..."
+JENKINS_URL=$(minikube service jenkins -n jenkins --url)
+check_command "No se pudo obtener la URL de Jenkins"
 
-3. Login with the password from step 1 and the username: admin
-4. Configure security realm and authorization strategy
-5. Use Jenkins Configuration as Code by specifying configScripts in your values.yaml file, see documentation: http://$NODE_IP:$NODE_PORT/configuration-as-code and examples: https://github.com/jenkinsci/configuration-as-code-plugin/tree/master/demos
+# Obtener la contraseña inicial de administrador
+echo "Obteniendo contraseña inicial de administrador..."
+ADMIN_PASSWORD=$(kubectl exec -it $(kubectl get pods -n jenkins -l app=jenkins -o jsonpath='{.items[0].metadata.name}') -n jenkins -- cat /var/jenkins_home/secrets/initialAdminPassword)
+check_command "No se pudo obtener la contraseña inicial de administrador"
 
-For more information on running Jenkins on Kubernetes, visit:
-https://cloud.google.com/solutions/jenkins-on-container-engine
-
-For more information about Jenkins Configuration as Code, visit:
-https://jenkins.io/projects/jcasc/
-
-
-NOTE: Consider using a custom image with pre-installed plugins
-Esperando a que Jenkins esté en ejecución...
-Error from server (NotFound): deployments.apps "jenkins" not found
-Jenkins ha sido instalado correctamente.
-Accede a Jenkins desde tu navegador usando la siguiente URL:
-http://192.168.49.2:32000
+echo "Jenkins ha sido desplegado exitosamente!"
+echo "URL de Jenkins: $JENKINS_URL"
+echo "Contraseña inicial de administrador: $ADMIN_PASSWORD"
+echo "Usa estas credenciales para configurar Jenkins en tu navegador."
