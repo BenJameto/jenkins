@@ -85,6 +85,14 @@ spec:
           mountPath: /var/jenkins_home
         - name: docker-sock
           mountPath: /var/run/docker.sock
+        # Install Docker in the Jenkins container
+        command:
+        - /bin/bash
+        - -c
+        - |
+          apt-get update &&
+          apt-get install -y docker.io &&
+          exec /usr/local/bin/jenkins.sh
       - name: dind
         image: docker:dind
         securityContext:
