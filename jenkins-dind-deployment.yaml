@@ -85,20 +85,14 @@ spec:
           mountPath: /var/jenkins_home
         - name: docker-sock
           mountPath: /var/run/docker.sock
-        # Install Docker in the Jenkins container
-        command:
-        - /bin/bash
-        - -c
-        - |
-          apt-get update &&
-          apt-get install -y docker.io &&
-          exec /usr/local/bin/jenkins.sh
+        # Elimina la instalación de Docker dentro del contenedor Jenkins
+        # El contenedor `dind` maneja Docker de manera independiente
       - name: dind
         image: docker:dind
         securityContext:
           privileged: true
         ports:
-        - containerPort: 2376  # Usamos el puerto estándar de Docker para evitar conflictos
+        - containerPort: 2376  # Cambiamos el puerto de Docker para evitar conflicto
         volumeMounts:
         - name: docker-storage
           mountPath: /var/lib/docker
@@ -123,6 +117,7 @@ spec:
   ports:
     - port: 8080
       targetPort: 8080
-      nodePort: 30000  # Especifica un puerto externo accesible para Jenkins
+      nodePort: 30000  # Exponemos Jenkins en el puerto 30000
   selector:
     app: jenkins
+
