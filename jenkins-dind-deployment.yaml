@@ -76,7 +76,7 @@ spec:
       serviceAccountName: jenkins
       containers:
       - name: jenkins
-        image: jenkins/jenkins:lts
+        image: jenkinsci/blueocean
         ports:
         - containerPort: 8080
         - containerPort: 50000
