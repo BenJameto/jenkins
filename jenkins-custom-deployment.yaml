@@ -76,31 +76,25 @@ spec:
       serviceAccountName: jenkins
       containers:
       - name: jenkins
-        image: jenkins/jenkins:latest
+        image: benjameto/my-jenkins-docker:latest
         ports:
         - containerPort: 8080
         - containerPort: 50000
         volumeMounts:
         - name: jenkins-home
           mountPath: /var/jenkins_home
-        env:
-        - name: DOCKER_HOST
-          value: tcp://localhost:2376
-      - name: dind
-        image: docker:dind
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
         securityContext:
-          privileged: true
-        ports:
-        - containerPort: 2376
-        volumeMounts:
-        - name: docker-storage
-          mountPath: /var/lib/docker
+          runAsUser: 0
+          runAsGroup: 994
       volumes:
       - name: jenkins-home
         persistentVolumeClaim:
           claimName: jenkins-pv-claim
-      - name: docker-storage
-        emptyDir: {}
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
 
 ---
 apiVersion: v1
