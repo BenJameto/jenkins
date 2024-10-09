@@ -17,8 +17,8 @@ scale_service() {
 }
 
 # Definir el nombre del servicio y el número de réplicas
-service_name="nombre-del-servicio"  # Cambia por el nombre de tu servicio
-replicas=3
+service_name="jenkins"  # Cambia por el nombre de tu servicio
+replicas=1
 
 # Llamar a la función para escalar el servicio
 scale_service "$service_name" "$replicas"
