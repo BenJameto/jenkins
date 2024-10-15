@@ -1,7 +1,7 @@
-docker
 *.py
 *.yaml
 !jenkins-custom-deployment.yaml.
 *.tar.gz
 prueba.sh
 !values.yaml
+*.txt
